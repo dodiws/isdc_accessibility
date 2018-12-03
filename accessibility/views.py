@@ -1005,7 +1005,7 @@ def geojsonadd_accessibility(response):
 	keys = ['Area','Population','area_on_gsm_coverage','buildings_on_gsm_coverage','na_en','pop_on_gsm_coverage',]
 	TRAVELTIMETO_TYPES = ['near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist']
 
-	for i,l in enumerate(boundary['features']):
+	for i,l in enumerate(boundary.get('features',[])):
 		boundary['features'][i]['properties'] = prop = dict_ext(boundary['features'][i]['properties'])
 
 		# Checking if it's in a district
@@ -1069,6 +1069,6 @@ def getAccesibilityStatistic(request,filterLock, flag, code, date):
 	panels_list['tables'] = [{
 		'title':v['title'],
 		'child':[v['parentdata']] + [i['value'] for i in v['child']]
-	} for k,v in panels['tables'].items() if k in ['near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
+	} for k,v in panels['tables'].items() if k in ['near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
 
 	return panels_list

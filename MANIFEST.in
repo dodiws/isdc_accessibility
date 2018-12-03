@@ -1,0 +1,4 @@
+include LICENSE
+include README.rst
+recursive-include dashboard/locale *
+recursive-include dashboard/templates *
