@@ -122,10 +122,10 @@ def get_dashboard_meta(*args,**kwargs):
 				'name': 'accessibility',
 				'function': dashboard_accessibility, 
 				'template': 'dash_accessibility.html',
-				'menutitle': 'Accesibility',
+				'menutitle': 'Accessibility',
 			},
 		],
-		'menutitle': 'Accesibility',
+		'menutitle': 'Accessibility',
 	}
 	return response
 
@@ -980,7 +980,8 @@ def dashboard_accessibility(request, filterLock, flag, code, includes=[], exclud
 	for k,v in titles.items():
 		with charts.path(k) as chart:
 			chart['title'] = v
-			chart['child'] = [[TIME_DISTANCE_TITLES[i],accessibility[k][i]] for i in TIME_DISTANCE_TYPES]
+			chart['labels'] = [TIME_DISTANCE_TITLES[i] for i in TIME_DISTANCE_TYPES]
+			chart['values'] = [accessibility[k][i] for i in TIME_DISTANCE_TYPES]
 		
 	for k,v in titles.items():
 		with tables.path(k) as table:
