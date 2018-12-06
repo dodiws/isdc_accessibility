@@ -1,1 +1,662 @@
 {% extends "dashboard_base.html" %}
+{% load i18n %}
+{% load base_tags %}
+{% load app_filters %}
+
+{% block dashboard_breadcrumb %} 
+    <a href="{% url "dashboard_detail" %}?page=accessibility" class="breadcrumb">{% trans "Accessibility" %}</a>
+    {% include "links_title.html" %}
+{% endblock dashboard_breadcrumb %}
+
+{% block dashboard_content %}
+    <div class="row">
+        {% include "qlink_list.html" %}
+    </div>
+
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        {% trans "Map" %}
+                    </span>
+                    <div class="row">
+                        <div class="col s12 l3 xl2">
+                            <div id="layercontrol">
+                                <div class="input-field">
+                                    <select id="accessOpt">
+                                        <option value="access_checkbox_nAirprt">Travel time to nearest airport</option>
+                                        <option value="access_checkbox_nHlt1">Travel time to nearest hospital tier 1</option>
+                                        <option value="access_checkbox_nHlt2">Travel time to nearest hospital tier 2</option>
+                                        <option value="access_checkbox_nHlt3">Travel time to nearest hospital tier 3</option>
+                                        <option value="access_checkbox_nHltAll">Travel time to nearest hospital tier All</option>
+                                        <option value="access_checkbox_nItProvCap">Travel time to its provincial capital</option>
+                                        <option value="access_checkbox_nProvCap">Travel time to nearest provincial capital</option>
+                                        <option value="access_checkbox_nDistCntr">Travel time to nearest district center</option>
+                                        <option value="access_radio_gsm">GSM Coverage</option>
+                                    </select>
+                                    <label for="accessOpt">Choose Layer :</label>
+                                </div>
+
+                                <div class="input-field">
+                                    <span>WMS Layer</span>
+                                    <div class="switch right wms_check">
+                                        <label class="access_checkbox_nAirprt access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nAirprt>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nHlt1 access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nHlt1>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nHlt2 access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nHlt2>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nHlt3 access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nHlt3>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nHltAll access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nHltAll>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nItProvCap access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nItProvCap>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nProvCap access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nProvCap>
+                                            <span class="lever"></span>
+                                        </label>
+                                        <label style='display:none;' class="access_checkbox_nDistCntr access_opt">
+                                            <input type="checkbox" data-type=wms data-layer=nDistCntr>
+                                            <span class="lever"></span>
+                                        </label>
+                                        
+                                    </div>
+                                </div>
+
+                                <label for="TimeLevel">Time Travel :</label>
+                                <div id="TimeLevel" class="lvl_choice">
+                                    <div style='display:none;' class="row access_radio_gsm access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="radio" name="access_radio" class="with-gap" value="pop_on_gsm_coverage">
+                                                <span>Population in GSM Coverage</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="radio" name="access_radio" class="with-gap" value="buildings_on_gsm_coverage">
+                                                <span>Building in GSM Coverage</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="radio" name="access_radio" class="with-gap" value="area_on_gsm_coverage">
+                                                <span>Area in GSM Coverage</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="row access_checkbox_nAirprt access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_airp">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_airp">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_airp">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_airp">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_airp">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_airp">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_airp">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_airp">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_airp">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nHlt1 access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_hlt1">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_hlt1">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_hlt1">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_hlt1">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_hlt1">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_hlt1">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_hlt1">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_hlt1">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_hlt1">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nHlt2 access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_hlt2">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_hlt2">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_hlt2">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_hlt2">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_hlt2">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_hlt2">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_hlt2">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_hlt2">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_hlt2">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nHlt3 access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_hlt3">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_hlt3">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_hlt3">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_hlt3">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_hlt3">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_hlt3">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_hlt3">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_hlt3">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_hlt3">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nHltAll access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_hltall">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_hltall">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_hltall">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_hltall">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_hltall">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_hltall">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_hltall">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_hltall">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_hltall">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nItProvCap access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__itsx_prov">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__itsx_prov">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__itsx_prov">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__itsx_prov">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__itsx_prov">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__itsx_prov">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__itsx_prov">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__itsx_prov">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__itsx_prov">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nProvCap access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_prov">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_prov">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_prov">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_prov">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_prov">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_prov">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_prov">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_prov">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_prov">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style='display:none;' class="access_checkbox_nDistCntr access_opt">
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l1_h__near_dist">
+                                                <span>Travel time < 1 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l2_h__near_dist">
+                                                <span>Travel time < 2 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l3_h__near_dist">
+                                                <span>Travel time < 3 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l4_h__near_dist">
+                                                <span>Travel time < 4 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l5_h__near_dist">
+                                                <span>Travel time < 5 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l6_h__near_dist">
+                                                <span>Travel time < 6 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l7_h__near_dist">
+                                                <span>Travel time < 7 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="l8_h__near_dist">
+                                                <span>Travel time < 8 h</span>
+                                            </label>
+                                        </div>
+                                        <div class="col s12">
+                                            <label>
+                                                <input type="checkbox" name="access_checkbox" class="filled-in" value="g8_h__near_dist">
+                                                <span>Travel time > 8 h</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <label for="themes">Pick a theme :</label>
+                                <div id="themes">
+                                    <button class="theme active" data-btn="YlOrRd"></button>
+                                    <button class="theme" data-btn="PuRd"></button>
+                                    <button class="theme" data-btn="GnBu"></button>
+                                    <button class="theme" data-btn="Blues"></button>
+                                    <button class="theme" data-btn="BuGn"></button>
+                                    <button class="theme" data-btn="BuPu"></button>
+                                    <button class="theme" data-btn="Greens"></button>
+                                    <button class="theme" data-btn="Greys"></button>
+                                    <button class="theme" data-btn="Oranges"></button>
+                                    <button class="theme" data-btn="OrRd"></button>
+                                    <button class="theme" data-btn="PuBu"></button>
+                                    <button class="theme" data-btn="PuBuGn"></button>
+                                    <button class="theme" data-btn="Purples"></button>
+                                    <button class="theme" data-btn="RdPu"></button>
+                                    <button class="theme" data-btn="Reds"></button>
+                                    <button class="theme" data-btn="YlGn"></button>
+                                    <button class="theme" data-btn="YlGnBu"></button>
+                                    <button class="theme" data-btn="YlOrBr"></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col s12 l9 xl6">
+                            <div id="leaflet_access_map" class="map-size"></div>
+                        </div>
+                        <div class="col s12 l12 xl4">
+                            <div id="mapInfo"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% for chart_title, chart_val in panels.charts.items %}
+            {% if  chart_title == 'gsmcoverage_area' or chart_title == 'gsmcoverage_building' or chart_title == 'gsmcoverage_pop' %}
+                <div class="col s12 m6 xl4">
+                    <div class="card card-graph">
+                        <div class="card-header red darken-3 white-text z-depth-2">
+                            <span class="card-title">{{ chart_val.title }}</span>
+                            <i class=" left"></i>
+                        </div>
+                        <div class="card-image">
+                            <div id="{{ chart_title }}" class="ch-size donut-chart" data-color="colorDonut" data-val='{{ chart_val.child | jsonify | safe }}' ></div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col s12 m6 xl4">
+                    <div class="card card-graph">
+                        <div class="card-header red darken-3 white-text z-depth-2">
+                            <span class="card-title">{{ chart_val.title }}</span>
+                            <i class=" left"></i>
+                        </div>
+                        <div class="card-image">
+                            <!-- <div id="chart_bar_horizontal_near_airp" class="ch-size bar-chart" data-color="colorBar" data-yaxis='{{ panels.near_airp.title | jsonify | safe }}' data-val="{{ panels.near_airp.value }}" ></div> -->
+                            <div id="{{ chart_title }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='["< 1 h", "< 2 h", "< 3 h", "< 4 h", "< 5 h", "< 6 h", "< 7 h", "< 8 h", "> 8 h"]' data-val="[17560923, 7338049, 3784442, 1614867, 1084962, 795055, 453229, 419414, 191455]" ></div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% for accessibility_type, accessibility_val in panels.tables.items %}
+        <div class="col s12 m6 xl12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">
+                        {{ accessibility_val.title }}
+                    </span>
+                    <p>{% trans "Population approximate travel time towards the nearest airport/airfield (Catchment Area)." %}</p>
+                    <div class="table-responsive-scroll">
+                        <table class="striped highlight online color_table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">{% trans "Region" %}</th>
+                                    <th colspan="18">{% trans "Travel Time" %}</th>
+                                </tr>
+                                <tr>
+                                    <th class="l1h hum">&lt; {% trans "1 h" %}</th>
+                                    <th class="l2h hum">&lt; {% trans "2 h" %}</th>
+                                    <th class="l3h hum">&lt; {% trans "3 h" %}</th>
+                                    <th class="l4h hum">&lt; {% trans "4 h" %}</th>
+                                    <th class="l5h hum">&lt; {% trans "5 h" %}</th>
+                                    <th class="l6h hum">&lt; {% trans "6 h" %}</th>
+                                    <th class="l7h hum">&lt; {% trans "7 h" %}</th>
+                                    <th class="l8h hum">&lt; {% trans "8 h" %}</th>
+                                    <th class="m8h hum">&gt; {% trans "8 h" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parent in accessibility_val.parentdata %}
+                                    <td class="boldRow">{{parent}}</td>
+                                {% endfor %}
+                                {% for child in accessibility_val.child %}
+                                    <tr class="selectable" onclick="window.document.location='?page=accessibility&code={{child.code}}';">
+                                        {% for item in child.value %}
+                                            <td>{{item}}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+{% endblock %}
