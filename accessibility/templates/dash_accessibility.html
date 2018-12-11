@@ -596,54 +596,35 @@
                         </div>
                     </div>
                 </div>
-            {% else %}
-                <div class="col s12 m6 xl4">
-                    <div class="card card-graph">
-                        <div class="card-header red darken-3 white-text z-depth-2">
-                            <span class="card-title">{{ chart_val.title }}</span>
-                            <i class=" left"></i>
-                        </div>
-                        <div class="card-image">
-                            <!-- <div id="chart_bar_horizontal_near_airp" class="ch-size bar-chart" data-color="colorBar" data-yaxis='{{ panels.near_airp.title | jsonify | safe }}' data-val="{{ panels.near_airp.value }}" ></div> -->
-                            <div id="{{ chart_title }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='["< 1 h", "< 2 h", "< 3 h", "< 4 h", "< 5 h", "< 6 h", "< 7 h", "< 8 h", "> 8 h"]' data-val="[17560923, 7338049, 3784442, 1614867, 1084962, 795055, 453229, 419414, 191455]" ></div>
-                        </div>
-                    </div>
-                </div>
             {% endif %}
         {% endfor %}
 
-        {% for accessibility_type, accessibility_val in panels.tables.items %}
+        <!-- {#% for gsmcoverage_type, gsmcoverage_val in panels.tables.gsmcoverage.items %} -->
         <div class="col s12 m6 xl12">
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">
-                        {{ accessibility_val.title }}
+                        {{ gsmcoverage_val.title }}
                     </span>
-                    <p>{% trans "Population approximate travel time towards the nearest airport/airfield (Catchment Area)." %}</p>
+                    <p>{% trans "The estimated number of persons living within GSM coverage. This is unrelated to the number of subscribers." %}</p>
                     <div class="table-responsive-scroll">
-                        <table class="striped highlight online color_table time-travel">
+                        <table class="striped highlight online">
                             <thead>
                                 <tr>
                                     <th rowspan="2">{% trans "Region" %}</th>
-                                    <th colspan="18">{% trans "Travel Time" %}</th>
+                                    <th colspan="3">{% trans "GSM Coverage" %}</th>
                                 </tr>
                                 <tr>
-                                    <th class="l1h hum">&lt; {% trans "1 h" %}</th>
-                                    <th class="l2h hum">&lt; {% trans "2 h" %}</th>
-                                    <th class="l3h hum">&lt; {% trans "3 h" %}</th>
-                                    <th class="l4h hum">&lt; {% trans "4 h" %}</th>
-                                    <th class="l5h hum">&lt; {% trans "5 h" %}</th>
-                                    <th class="l6h hum">&lt; {% trans "6 h" %}</th>
-                                    <th class="l7h hum">&lt; {% trans "7 h" %}</th>
-                                    <th class="l8h hum">&lt; {% trans "8 h" %}</th>
-                                    <th class="m8h hum">&gt; {% trans "8 h" %}</th>
+                                    <th class="hum">{% trans "Population" %}</th>
+                                    <th class="hum">{% trans "Building" %}</th>
+                                    <th class="hum">{% trans "Area" %}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for parent in accessibility_val.parentdata %}
+                                {% for parent in gsmcoverage_val.parentdata %}
                                     <td class="boldRow">{{parent}}</td>
                                 {% endfor %}
-                                {% for child in accessibility_val.child %}
+                                {% for child in gsmcoverage_val.child %}
                                     <tr class="selectable" onclick="window.document.location='?page=accessibility&code={{child.code}}';">
                                         {% for item in child.value %}
                                             <td>{{item}}</td>
@@ -656,7 +637,7 @@
                 </div>
             </div>
         </div>
-        {% endfor %}
+        <!-- {#% endfor %} -->
 
         {% tolist panels.tables.near_airp panels.charts.near_airp as row1 %}
         {% tolist panels.tables.near_hlt1 panels.charts.near_hlt1 as row2 %}
