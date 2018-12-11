@@ -621,7 +621,7 @@
                     </span>
                     <p>{% trans "Population approximate travel time towards the nearest airport/airfield (Catchment Area)." %}</p>
                     <div class="table-responsive-scroll">
-                        <table class="striped highlight online color_table">
+                        <table class="striped highlight online color_table time-travel">
                             <thead>
                                 <tr>
                                     <th rowspan="2">{% trans "Region" %}</th>
@@ -658,5 +658,83 @@
         </div>
         {% endfor %}
 
+        {% tolist panels.tables.near_airp panels.charts.near_airp as row1 %}
+        {% tolist panels.tables.near_hlt1 panels.charts.near_hlt1 as row2 %}
+        {% tolist panels.tables.near_hlt2 panels.charts.near_hlt2 as row3 %}
+        {% tolist panels.tables.near_hlt3 panels.charts.near_hlt3 as row4 %}
+        {% tolist panels.tables.near_hltall panels.charts.near_hltall as row5 %}
+        {% tolist panels.tables.itsx_prov panels.charts.itsx_prov as row6 %}
+        {% tolist panels.tables.near_prov panels.charts.near_prov as row7 %}
+        {% tolist panels.tables.near_dist panels.charts.near_dist as row8 %}
+        {% tolist row1 row2 row3 row4 row5 row6 row7 row8 as rows %}
+
+        {% for row in rows %}
+            <div class="col s12 m6 xl8">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">
+                            {{ row.0.title }}
+                        </span>
+                        <p>{{ row.0.description }}</p>
+                        <div class="table-responsive-scroll">
+                            <table class="striped highlight online color_table time-travel">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">{% trans "Region" %}</th>
+                                        <th colspan="18">{% trans "Travel Time" %}</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="l1h hum">&lt; {% trans "1 h" %}</th>
+                                        <th class="l2h hum">&lt; {% trans "2 h" %}</th>
+                                        <th class="l3h hum">&lt; {% trans "3 h" %}</th>
+                                        <th class="l4h hum">&lt; {% trans "4 h" %}</th>
+                                        <th class="l5h hum">&lt; {% trans "5 h" %}</th>
+                                        <th class="l6h hum">&lt; {% trans "6 h" %}</th>
+                                        <th class="l7h hum">&lt; {% trans "7 h" %}</th>
+                                        <th class="l8h hum">&lt; {% trans "8 h" %}</th>
+                                        <th class="m8h hum">&gt; {% trans "8 h" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for parent in row.0.parentdata %}
+                                        <td class="boldRow">{{parent}}</td>
+                                    {% endfor %}
+                                    {% for child in row.0.child %}
+                                        <tr class="selectable" onclick="window.document.location='?page=accessibility&code={{child.code}}';">
+                                            {% for item in child.value %}
+                                                <td>{{item}}</td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col s12 m6 xl4">
+                <div class="card card-graph">
+                    <div class="card-header red darken-3 white-text z-depth-2">
+                        <span class="card-title">{{ row.1.title }}</span>
+                        <i class=" left"></i>
+                    </div>
+                    <div class="card-image">
+                        <div id="{{ row.1.key }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='{{ row.1.labels | jsonify | safe }}' data-val="{{ row.1.values }}" ></div>
+                        <!-- <div id="{{ chart_title }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='["< 1 h", "< 2 h", "< 3 h", "< 4 h", "< 5 h", "< 6 h", "< 7 h", "< 8 h", "> 8 h"]' data-val="[17560923, 7338049, 3784442, 1614867, 1084962, 795055, 453229, 419414, 191455]" ></div> -->
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
     </div>
+{% endblock %}
+
+{% block extra_script %}
+    <script>
+        var centroid = boundary['centroid'];
+        var chosen_label = '{{parent_label}}';
+        var time_legend =['< {% trans "1 h" %}', '< {% trans "2 h" %}', '< {% trans "3 h" %}', '< {% trans "4 h" %}', '< {% trans "5 h" %}', '< {% trans "6 h" %}', '< {% trans "7 h" %}', '< {% trans "8 h" %}', '> {% trans "8 h" %}', ];
+        var gsm_legend =['{% trans "With GSM Coverage" %}','{% trans "Without GSM Coverage" %}'];
+
+    </script>
 {% endblock %}
