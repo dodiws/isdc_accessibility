@@ -12,12 +12,12 @@ VERSION = readfile('VERSION')
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='isdc-flood',
+    name='isdc-accessibility',
     version=VERSION,
     packages=find_packages(),
     include_package_data=True,
     license='BSD License',  # temporary license
-    description='ISDC Flood.',
+    description='ISDC Accessibility.',
     long_description=README,
     url='https://www.example.com/',
     author='ASDC Dev',

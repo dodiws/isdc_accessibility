@@ -104,7 +104,7 @@ import pprint
 # import pandas as pd
 
 # ISDC
-from geonode.utils import include_section, none_to_zero, query_to_dicts, RawSQL_nogroupby, div_by_zero_is_zero, dict_ext
+from geonode.utils import include_section, none_to_zero, query_to_dicts, RawSQL_nogroupby, div_by_zero_is_zero, dict_ext, linenum
 from django.shortcuts import render, get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -497,7 +497,7 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 			values('dist_code', 'na_en').annotate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 		else :
 			gsm = AfgCapaGsmcvr.objects.filter(prov_code=code).aggregate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
-			gsm_child = AfgCapaGsmcvr.objects.filter(dist_code=code).extra(select={'na_en': 'SELECT dist_na_en FROM afg_admbnda_adm2 WHERE afg_admbnda_adm2.dist_code = afg_capa_gsmcvr.dist_code'}).\
+			gsm_child = AfgCapaGsmcvr.objects.filter(prov_code=code).extra(select={'na_en': 'SELECT dist_na_en FROM afg_admbnda_adm2 WHERE afg_admbnda_adm2.dist_code = afg_capa_gsmcvr.dist_code'}).\
 			values('dist_code', 'na_en').annotate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 
 	elif flag =='drawArea':
@@ -524,6 +524,8 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 		q8 = AfgCaptHltfacTierallImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
 		gsm = AfgCapaGsmcvr.objects.filter(vuid__in=tt).aggregate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 		gsm_child = {}
+
+	print linenum(), gsm_child.query
 
 	if include_section('AfgPplp', includes, excludes):
 		for i in q1:
@@ -620,7 +622,7 @@ def getAccessibility(request, filterLock, flag, code, includes=[], excludes=[]):
 	# for i in rawAccesibility:
 	#     response[i]=rawAccesibility[i]
 	
-	response.update({k:accesibilitydata[k] for k in ['pop_on_gsm_coverage','area_on_gsm_coverage','buildings_on_gsm_coverage']})
+	response.update(dict_ext(accesibilitydata).within('pop_on_gsm_coverage','area_on_gsm_coverage','buildings_on_gsm_coverage','gsm_child'))
 
 	response['pop_coverage_percent'] = int(round(((response['pop_on_gsm_coverage'] or 0)/(response['baseline']['pop_total'] or 1))*100,0))
 	response['area_coverage_percent'] = int(round(((response['area_on_gsm_coverage'] or 0)/(response['baseline']['area_total'] or 1))*100,0))
@@ -959,6 +961,7 @@ def dashboard_accessibility(request, filterLock, flag, code, includes=[], exclud
 	keys = {'pop':'pop', 'area':'area', 'building':'buildings'}
 	for k,v in keys.items():
 		with charts.path('gsmcoverage_'+k) as chart:
+			chart['key'] = 'gsmcoverage_'+k
 			chart['title'] = titles[k]
 			chart['total'] = baseline[k+'_total']
 			chart['gsmcoverage'] = accessibility[v+'_on_gsm_coverage']
@@ -979,18 +982,41 @@ def dashboard_accessibility(request, filterLock, flag, code, includes=[], exclud
 	}
 	for k,v in titles.items():
 		with charts.path(k) as chart:
+			chart['key'] = k
 			chart['title'] = v
 			chart['labels'] = [TIME_DISTANCE_TITLES[i] for i in TIME_DISTANCE_TYPES]
 			chart['values'] = [accessibility[k][i] for i in TIME_DISTANCE_TYPES]
 		
 	for k,v in titles.items():
 		with tables.path(k) as table:
+			table['key'] = k
 			table['title'] = v
 			table['parentdata'] = [response['parent_label']]+[accessibility[k][i] for i in TIME_DISTANCE_TYPES]
 			table['child'] = [{
 				'code':i['code'],
 				'value':[i['na_en']]+[i.get('%s_h__%s'%(j,k)) or 0 for j in TIME_DISTANCE_TYPES],
 			} for i in accessibility['lc_child']]
+
+	k = 'mobile_phone_coverage_population'
+	tables[k] = {
+		'key':k,
+		'title':_('Mobile Phone Coverage Population'),
+		'parentdata':[
+			response['parent_label'],
+			accessibility['pop_on_gsm_coverage'],
+			accessibility['buildings_on_gsm_coverage'],
+			accessibility['area_on_gsm_coverage'],
+		],
+		'child':[{
+			'code':i.get('prov_code') or i.get('dist_code') or 0,
+			'value':[
+				i['na_en'],
+				i['pop'],
+				i['buildings'],
+				i['area'],
+			],
+		} for i in accessibility['gsm_child']]
+	}
 
 	if include_section('GeoJson', includes, excludes):
 		response['GeoJson'] = geojsonadd_accessibility(response)
@@ -1030,7 +1056,7 @@ class AccesibilityStatisticResource(ModelResource):
 
 	class Meta:
 		# authorization = DjangoAuthorization()
-		resource_name = 'statistic_accesibility'
+		resource_name = 'statistic_accessibility'
 		allowed_methods = ['post']
 		detail_allowed_methods = ['post']
 		cache = SimpleCache()
@@ -1066,10 +1092,12 @@ def getAccesibilityStatistic(request,filterLock, flag, code, date):
 	panels = dashboard_accessibility(request, filterLock, flag, code, date, excludes=['GeoJson'])['panels']
 
 	panels_list = dict_ext()
-	panels_list['charts'] = [v for k,v in panels['charts'].items() if k in ['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
+	# panels_list['charts'] = [v for k,v in panels['charts'].items() if k in ['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
+	panels_list['charts'] = panels.path('charts').valueslistbykey(['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist'],addkeyasattr=True)
 	panels_list['tables'] = [{
-		'title':v['title'],
-		'child':[v['parentdata']] + [i['value'] for i in v['child']]
-	} for k,v in panels['tables'].items() if k in ['near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
+		'key':k,
+		'title':panels['tables'][k]['title'],
+		'child':[panels['tables'][k]['parentdata']] + [i['value'] for i in panels['tables'][k]['child']]
+	} for k in ['mobile_phone_coverage_population','near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist'] if k in panels['tables']]
 
-	return panels_list
+	return {'panels_list':panels_list}
