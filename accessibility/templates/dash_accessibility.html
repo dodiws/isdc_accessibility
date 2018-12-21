@@ -9,7 +9,7 @@
 {% endblock dashboard_breadcrumb %}
 
 {% block dashboard_content %}
-    <div class="row">
+    <div class="row no-margin">
         {% include "qlink_list.html" %}
     </div>
 
@@ -589,22 +589,27 @@
                     <div class="card card-graph">
                         <div class="card-header red darken-3 white-text z-depth-2">
                             <span class="card-title">{{ chart_val.title }}</span>
-                            <i class=" left"></i>
                         </div>
                         <div class="card-image">
                             <div id="{{ chart_title }}" class="ch-size donut-chart" data-color="colorDonut" data-val='{{ chart_val.child | jsonify | safe }}' ></div>
+                            <div class="center-align grey-text text-darken-2 affected-count">
+                                <span class="red-text text-darken-3">{% readable chart_val.affected %}</span>
+                                of
+                                <span class="red-text text-darken-3">{% readable chart_val.total %}</span>
+                                covered
+                            </div>
                         </div>
                     </div>
                 </div>
             {% endif %}
         {% endfor %}
 
-        <!-- {#% for gsmcoverage_type, gsmcoverage_val in panels.tables.gsmcoverage.items %} -->
+        <!-- {#% for gsmcoverage_type, gsmcoverage_val in panels.tables.mobile_phone_coverage_population.items %} -->
         <div class="col s12 m6 xl12">
             <div class="card">
                 <div class="card-content">
                     <span class="card-title">
-                        {{ gsmcoverage_val.title }}
+                        {{ panels.tables.mobile_phone_coverage_population.title }}
                     </span>
                     <p>{% trans "The estimated number of persons living within GSM coverage. This is unrelated to the number of subscribers." %}</p>
                     <div class="table-responsive-scroll">
@@ -621,10 +626,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for parent in gsmcoverage_val.parentdata %}
+                                {% for parent in panels.tables.mobile_phone_coverage_population.parentdata %}
                                     <td class="boldRow">{{parent}}</td>
                                 {% endfor %}
-                                {% for child in gsmcoverage_val.child %}
+                                {% for child in panels.tables.mobile_phone_coverage_population.child %}
                                     <tr class="selectable" onclick="window.document.location='?page=accessibility&code={{child.code}}';">
                                         {% for item in child.value %}
                                             <td>{{item}}</td>
@@ -700,7 +705,7 @@
                         <i class=" left"></i>
                     </div>
                     <div class="card-image">
-                        <div id="{{ row.1.key }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='{{ row.1.labels | jsonify | safe }}' data-val="{{ row.1.values }}" ></div>
+                        <div id="{{ row.1.key }}" class="ch-size bar-chart" data-color="colorAccess" data-colorpoint="true" data-legend="false" data-xaxis='{% trans "Population" %}' data-yaxis='{{ row.1.labels | jsonify | safe }}' data-val='[{"data":{{ row.1.values }}}]' ></div>
                         <!-- <div id="{{ chart_title }}" class="ch-size bar-chart" data-color="colorAccess" data-yaxis='["< 1 h", "< 2 h", "< 3 h", "< 4 h", "< 5 h", "< 6 h", "< 7 h", "< 8 h", "> 8 h"]' data-val="[17560923, 7338049, 3784442, 1614867, 1084962, 795055, 453229, 419414, 191455]" ></div> -->
                     </div>
                 </div>
