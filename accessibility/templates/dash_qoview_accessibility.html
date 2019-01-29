@@ -1,0 +1,8 @@
+
+{% with charts=data.panels.charts color="colorAccess" colorpoint="true" %}
+{% include "dash_chart_donut.html" with title=charts.gsmcoverage_pop.title icon="icon-people_affected_population" key="gsmcoverage_pop" values=charts.gsmcoverage_pop.child %}
+{% include "dash_chart_bar.html" with title=charts.near_airp.title key="near_airp" data=charts.near_airp.data labels=charts.near_airp.labels xaxis="" values=charts.near_airp.values %}
+{% include "dash_chart_bar.html" with title=charts.near_hlt1.title key="near_hlt1" data=charts.near_hlt1.data labels=charts.near_hlt1.labels xaxis="" values=charts.near_hlt1.values %}
+{% include "dash_chart_bar.html" with title=charts.near_hlt2.title key="near_hlt2" data=charts.near_hlt2.data labels=charts.near_hlt2.labels xaxis="" values=charts.near_hlt2.values %}
+{% include "dash_chart_bar.html" with title=charts.itsx_prov.title key="itsx_prov" data=charts.itsx_prov.data labels=charts.itsx_prov.labels xaxis="" values=charts.itsx_prov.values %}
+{% endwith %}

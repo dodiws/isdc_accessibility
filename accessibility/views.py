@@ -104,13 +104,16 @@ import pprint
 # import pandas as pd
 
 # ISDC
-from geonode.utils import include_section, none_to_zero, query_to_dicts, RawSQL_nogroupby, div_by_zero_is_zero, dict_ext, linenum
+from geonode.utils import include_section, none_to_zero, query_to_dicts, RawSQL_nogroupby, div_by_zero_is_zero, dict_ext, linenum, list_ext
 from django.shortcuts import render, get_object_or_404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from geodb.enumerations import TIME_DISTANCE_TYPES, TIME_DISTANCE_TITLES
 from geonode.maps.views import _resolve_map, _PERMISSION_MSG_VIEW
 from urlparse import urlparse
+from django.conf.urls import url
+from tastypie.utils import trailing_slash
+from tastypie.authentication import BasicAuthentication, SessionAuthentication
 
 def get_dashboard_meta(*args,**kwargs):
 	# if page_name == 'accessibility':
@@ -129,11 +132,11 @@ def get_dashboard_meta(*args,**kwargs):
 	}
 	return response
 
-def getQuickOverview(request, filterLock, flag, code, includes=[], excludes=[]):
-	response = {}
-	response.update(GetAccesibilityData(filterLock, flag, code, includes=['AfgCaptAirdrmImmap', 'AfgCaptHltfacTier1Immap', 'AfgCaptHltfacTier2Immap', 'AfgCaptAdm1ItsProvcImmap', 'AfgCapaGsmcvr']))
-	response['pop_coverage_percent'] = int(round((response['pop_on_gsm_coverage']/response['baseline']['pop_total'])*100,0))
-	return response
+# def getQuickOverview(request, filterLock, flag, code, includes=[], excludes=[]):
+# 	response = {}
+# 	response.update(GetAccesibilityData(filterLock, flag, code, includes=['AfgCaptAirdrmImmap', 'AfgCaptHltfacTier1Immap', 'AfgCaptHltfacTier2Immap', 'AfgCaptAdm1ItsProvcImmap', 'AfgCapaGsmcvr']))
+# 	response['pop_coverage_percent'] = int(round((response['pop_on_gsm_coverage']/response['baseline']['pop_total'])*100,0))
+# 	return response
 
 # moved from geodb.geoapi
 
@@ -436,9 +439,347 @@ def getAccesibilityInfoVillages(request):
 	return render_to_response(template,
 								  RequestContext(request, context_dict))
 
+def getAccesibilityInfoVillagesCommon(village):
+	# template = './accessInfo.html'
+	# village = request.GET["v"]
+	context_dict = getCommonVillageData(village)
+
+	px = get_object_or_404(AfgCaptPpl, vil_uid=village)
+	context_dict['cl_road_time']=getConvertedTime(px.time_to_road)
+	context_dict['cl_road_distance']=getConvertedDistance(px.distance_to_road)
+
+	# airport
+	try:
+		ptemp = get_object_or_404(AfgAirdrmp, geonameid=px.airdrm_id)
+		angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+		context_dict['cl_airport_name']=ptemp.namelong
+		context_dict['cl_airport_time']=getConvertedTime(px.airdrm_time)
+		context_dict['cl_airport_distance']=getConvertedDistance(px.airdrm_dist)
+		context_dict['cl_airport_angle']=angle['angle']
+		context_dict['cl_airport_direction_label']=getDirectionLabel(angle['angle'])
+	except:
+		print 'not found'
+
+	# closest prov capital
+	try:
+		ptemp = get_object_or_404(AfgPplp, vil_uid=px.ppl_provc_vuid)
+		angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+		context_dict['cl_prov_cap_name']=ptemp.name_en
+		context_dict['cl_prov_cap_time']=getConvertedTime(px.ppl_provc_time)
+		context_dict['cl_prov_cap_distance']=getConvertedDistance(px.ppl_provc_dist)
+		context_dict['cl_prov_cap_angle']=angle['angle']
+		context_dict['cl_prov_cap_direction_label']=getDirectionLabel(angle['angle'])
+		context_dict['cl_prov_cap_parent'] = ptemp.prov_na_en
+	except:
+		print 'not found'
+
+	# Its prov capital
+	try:
+		ptemp = get_object_or_404(AfgPplp, vil_uid=px.ppl_provc_its_vuid)
+		angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+		context_dict['it_prov_cap_name']=ptemp.name_en
+		context_dict['it_prov_cap_time']=getConvertedTime(px.ppl_provc_its_time)
+		context_dict['it_prov_cap_distance']=getConvertedDistance(px.ppl_provc_its_dist)
+		context_dict['it_prov_cap_angle']=angle['angle']
+		context_dict['it_prov_cap_direction_label']=getDirectionLabel(angle['angle'])
+	except:
+		print 'not found'
+
+	# closest district capital
+	try:
+		ptemp = get_object_or_404(AfgPplp, vil_uid=px.ppl_distc_vuid)
+		angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+		context_dict['cl_dist_cap_name']=ptemp.name_en
+		context_dict['cl_dist_cap_time']=getConvertedTime(px.ppl_distc_time)
+		context_dict['cl_dist_cap_distance']=getConvertedDistance(px.ppl_distc_dist)
+		context_dict['cl_dist_cap_angle']=angle['angle']
+		context_dict['cl_dist_cap_direction_label']=getDirectionLabel(angle['angle'])
+		context_dict['cl_dist_cap_parent'] = ptemp.prov_na_en
+	except:
+		print 'not found'
+
+	# Its district capital
+	try:
+		ptemp = get_object_or_404(AfgPplp, vil_uid=px.ppl_distc_its_vuid)
+		angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+		context_dict['it_dist_cap_name']=ptemp.name_en
+		context_dict['it_dist_cap_time']=getConvertedTime(px.ppl_distc_its_time)
+		context_dict['it_dist_cap_distance']=getConvertedDistance(px.ppl_distc_its_dist)
+		context_dict['it_dist_cap_angle']=angle['angle']
+		context_dict['it_dist_cap_direction_label']=getDirectionLabel(angle['angle'])
+	except:
+		print 'not found'
+
+	# Closest HF tier 1
+	try:
+		ptemp = get_object_or_404(AfgHltfac, facility_id=px.hltfac_tier1_id)
+	except:
+		ptemp = AfgHltfac.objects.all().filter(facility_id=px.hltfac_tier1_id)[0]
+	angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+	context_dict['t1_hf_name']=ptemp.facility_name
+	context_dict['t1_hf_time']=getConvertedTime(px.hltfac_tier1_time)
+	context_dict['t1_hf_distance']=getConvertedDistance(px.hltfac_tier1_dist)
+	context_dict['t1_hf_angle']=angle['angle']
+	context_dict['t1_hf_direction_label']=getDirectionLabel(angle['angle'])
+	context_dict['t1_hf_prov_parent'] = ptemp.prov_na_en
+	context_dict['t1_hf_dist_parent'] = ptemp.dist_na_en
+
+	# Closest HF tier 2
+	try:
+		ptemp = get_object_or_404(AfgHltfac, facility_id=px.hltfac_tier2_id)
+	except:
+		ptemp = AfgHltfac.objects.all().filter(facility_id=px.hltfac_tier2_id)[0]
+	angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+	context_dict['t2_hf_name']=ptemp.facility_name
+	context_dict['t2_hf_time']=getConvertedTime(px.hltfac_tier2_time)
+	context_dict['t2_hf_distance']=getConvertedDistance(px.hltfac_tier2_dist)
+	context_dict['t2_hf_angle']=angle['angle']
+	context_dict['t2_hf_direction_label']=getDirectionLabel(angle['angle'])
+	context_dict['t2_hf_prov_parent'] = ptemp.prov_na_en
+	context_dict['t2_hf_dist_parent'] = ptemp.dist_na_en
+
+	# Closest HF tier 3
+	try:
+		ptemp = get_object_or_404(AfgHltfac, facility_id=px.hltfac_tier3_id)
+	except:
+		ptemp = AfgHltfac.objects.all().filter(facility_id=px.hltfac_tier3_id)[0]
+	angle = getAngle(ptemp.wkb_geometry.x, ptemp.wkb_geometry.y, context_dict['position'].x, context_dict['position'].y)
+	context_dict['t3_hf_name']=ptemp.facility_name
+	context_dict['t3_hf_time']=getConvertedTime(px.hltfac_tier3_time)
+	context_dict['t3_hf_distance']=getConvertedDistance(px.hltfac_tier3_dist)
+	context_dict['t3_hf_angle']=angle['angle']
+	context_dict['t3_hf_direction_label']=getDirectionLabel(angle['angle'])
+	context_dict['t3_hf_prov_parent'] = ptemp.prov_na_en
+	context_dict['t3_hf_dist_parent'] = ptemp.dist_na_en
+
+	# GSM Coverages
+	try:
+		ptemp = get_object_or_404(AfgCaptGmscvr, vuid=village)
+		if ptemp:
+			context_dict['gsm_covered'] = 'Yes'
+		else:
+			context_dict['gsm_covered'] = 'No coverage'
+	except:
+		ptemp = AfgCaptGmscvr.objects.all().filter(vuid=village)
+		if len(ptemp)>0:
+			context_dict['gsm_covered'] = 'Yes'
+		else:
+			context_dict['gsm_covered'] = 'No coverage'
+
+	context_dict.pop('position')
+	return context_dict
+
+class AccesibilityInfoVillages(Resource):
+
+	class Meta:
+		resource_name = 'accessibility'
+		authentication = SessionAuthentication()
+
+	def prepend_urls(self):
+		name = self._meta.resource_name
+		return [
+			url(r"^%s%s$" % (name, trailing_slash()), self.wrap_view('getdata'), name='get_%s'%(name)),
+		]
+
+	def getdata(self, request, **kwargs):
+		self.method_check(request, allowed=['get'])
+		self.is_authenticated(request)
+		self.throttle_check(request)
+
+		data = getAccesibilityInfoVillagesCommon(request.GET.get('vuid'))
+		# return self.create_response(request, data)
+		response = {
+			'panels_list':{
+				'tables':[
+					{
+						'key':'base_info',
+						'child':[
+							[
+								{
+									'title':_('Settlement'),
+								},
+								{
+									'title':data.get('name_en',''),
+								}
+							],
+							[
+								{
+									'title':_('District'),
+								},
+								{
+									'title':data.get('dist_na_en',''),
+								}
+							],
+							[
+								{
+									'title':_('Province'),
+								},
+								{
+									'title':data.get('prov_na_en',''),
+								}
+							],
+							[
+								{
+									'title':_('GSM Coverage'),
+								},
+								{
+									'title':data.get('gsm_covered',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest Road'),
+								},
+								{
+									'child':[
+										[_('Travel time'),data.get('cl_road_time','')],
+										[_('Distance'),data.get('cl_road_distance','')],
+									],
+								}
+							],
+							[
+								{
+									'title':_('Closest Airport'),
+								},
+								{
+									'title':data.get('cl_airport_name',''),
+									'child':[
+										[_('Travel time'),data.get('cl_airport_time','')],
+										[_('Distance'),data.get('cl_airport_distance','')],
+									],
+									'direction':data.get('cl_airport_direction_label',''),
+									'direction_angle':data.get('cl_airport_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest Province Capital'),
+								},
+								{
+									'title':data.get('cl_prov_cap_name',''),
+									'child':[
+										[_('Province'),data.get('cl_prov_cap_parent','')],
+										[_('Travel time'),data.get('cl_prov_cap_time','')],
+										[_('Distance'),data.get('cl_prov_cap_distance','')],
+									],
+									'direction':data.get('cl_prov_cap_direction_label',''),
+									'direction_angle':data.get('cl_prov_cap_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Its Province Capital'),
+								},
+								{
+									'title':data.get('it_prov_cap_name',''),
+									'child':[
+										[_('Travel time'),data.get('it_prov_cap_time','')],
+										[_('Distance'),data.get('it_prov_cap_distance','')],
+									],
+									'direction':data.get('it_prov_cap_direction_label',''),
+									'direction_angle':data.get('it_prov_cap_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest District Capital'),
+								},
+								{
+									'title':data.get('cl_dist_cap_name',''),
+									'child':[
+										[_('Province'),data.get('cl_dist_cap_parent','')],
+										[_('Travel time'),data.get('cl_dist_cap_time','')],
+										[_('Distance'),data.get('cl_dist_cap_distance','')],
+									],
+									'direction':data.get('cl_dist_cap_direction_label',''),
+									'direction_angle':data.get('cl_dist_cap_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Its District Capital'),
+								},
+								{
+									'title':data.get('it_dist_cap_name',''),
+									'child':[
+										[_('Travel time'),data.get('it_dist_cap_time','')],
+										[_('Distance'),data.get('it_dist_cap_distance','')],
+									],
+									'direction':data.get('it_dist_cap_direction_label',''),
+									'direction_angle':data.get('it_dist_cap_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest Health Facility (Tier 1)'),
+									'child':[
+										[_('National (H1)')],
+										[_('Provincial (H2)')],
+										[_('District (H3)')],
+									],
+								},
+								{
+									'title':data.get('t1_hf_name',''),
+									'child':[
+										[_('Province'),data.get('t1_hf_prov_parent','')],
+										[_('District'),data.get('t1_hf_dist_parent','')],
+										[_('Travel time'),data.get('t1_hf_time','')],
+										[_('Distance'),data.get('t1_hf_distance','')],
+									],
+									'direction':data.get('t1_hf_direction_label',''),
+									'direction_angle':data.get('t1_hf_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest Health Facility (Tier 2)'),
+									'child':[
+										[_('Comprehensive Health Center (CHC)')],
+									],
+								},
+								{
+									'title':data.get('t2_hf_name',''),
+									'child':[
+										[_('Province'),data.get('t2_hf_prov_parent','')],
+										[_('District'),data.get('t2_hf_dist_parent','')],
+										[_('Travel time'),data.get('t2_hf_time','')],
+										[_('Distance'),data.get('t2_hf_distance','')],
+									],
+									'direction':data.get('t2_hf_direction_label',''),
+									'direction_angle':data.get('t2_hf_angle',''),
+								}
+							],
+							[
+								{
+									'title':_('Closest Health Facility (Tier 3)'),
+									'child':[
+										[_('Basic Health Center (BHC)')],
+										[_('Sub Health Center (SHC)')],
+									],
+								},
+								{
+									'title':data.get('t3_hf_name',''),
+									'child':[
+										[_('Province'),data.get('t3_hf_prov_parent','')],
+										[_('District'),data.get('t3_hf_dist_parent','')],
+										[_('Travel time'),data.get('t3_hf_time','')],
+										[_('Distance'),data.get('t3_hf_distance','')],
+									],
+									'direction':data.get('t3_hf_direction_label',''),
+									'direction_angle':data.get('t3_hf_angle',''),
+								}
+							],
+						],
+					},
+				],
+			},
+		}
+
+		return self.create_response(request, response)
+
 # moved from geodb.geo_calc
 
-def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
+def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[], wkt=None):
 	response = {}
 	gsm_child = {}
 	if flag=='entireAfg':
@@ -501,7 +842,7 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 			values('dist_code', 'na_en').annotate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 
 	elif flag =='drawArea':
-		tt = AfgPplp.objects.filter(wkb_geometry__intersects=filterLock).values('vuid')
+		tt = AfgPplp.objects.filter(wkb_geometry__intersects=wkt).values('vuid')
 		q1 = AfgCaptAdm1ItsProvcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
 		q2 = AfgCaptAdm1NearestProvcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
 		q3 = AfgCaptAdm2NearestDistrictcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
@@ -513,7 +854,7 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 		gsm = AfgCapaGsmcvr.objects.filter(vuid__in=tt).aggregate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 		gsm_child = {}
 	else:
-		tt = AfgPplp.objects.filter(wkb_geometry__intersects=filterLock).values('vuid')
+		tt = AfgPplp.objects.filter(wkb_geometry__intersects=wkt).values('vuid')
 		q1 = AfgCaptAdm1ItsProvcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
 		q2 = AfgCaptAdm1NearestProvcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
 		q3 = AfgCaptAdm2NearestDistrictcImmap.objects.filter(vuid__in=tt).values('time').annotate(pop=Sum('sum_area_population'))
@@ -525,51 +866,51 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 		gsm = AfgCapaGsmcvr.objects.filter(vuid__in=tt).aggregate(pop=Sum('gsm_coverage_population'),area=Sum('gsm_coverage_area_sqm'),buildings=Sum('area_buildings'))
 		gsm_child = {}
 
-	print linenum(), gsm_child.query
+	print linenum(), gsm_child.query if hasattr(gsm_child, 'query') else ''
 
-	if include_section('AfgPplp', includes, excludes):
+	if include_section('itsx_prov', includes, excludes):
 		for i in q1:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__itsx_prov']=round(i['pop'] or 0)
-	if include_section('AfgCaptAdm1ItsProvcImmap', includes, excludes):
+	if include_section('near_prov', includes, excludes):
 		for i in q2:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_prov']=round(i['pop'] or 0)
-	if include_section('AfgCaptAdm1NearestProvcImmap', includes, excludes):
+	if include_section('near_dist', includes, excludes):
 		for i in q3:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_dist']=round(i['pop'] or 0)
-	if include_section('AfgCaptAirdrmImmap', includes, excludes):
+	if include_section('near_airp', includes, excludes):
 		for i in q4:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_airp']=round(i['pop'] or 0)
-	if include_section('AfgCaptHltfacTier1Immap', includes, excludes):
+	if include_section('near_hlt1', includes, excludes):
 		for i in q5:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_hlt1']=round(i['pop'] or 0)
-	if include_section('AfgCaptHltfacTier2Immap', includes, excludes):
+	if include_section('near_hlt2', includes, excludes):
 		for i in q6:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_hlt2']=round(i['pop'] or 0)
-	if include_section('AfgCaptHltfacTier3Immap', includes, excludes):
+	if include_section('near_hlt3', includes, excludes):
 		for i in q7:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
 			timelabel = timelabel.replace('>','g')
 			response[timelabel+'__near_hlt3']=round(i['pop'] or 0)
-	if include_section('AfgCaptHltfacTierallImmap', includes, excludes):
+	if include_section('near_hltall', includes, excludes):
 		for i in q8:
 			timelabel = i['time'].replace(' ','_')
 			timelabel = timelabel.replace('<','l')
@@ -591,17 +932,17 @@ def GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[]):
 
 	return response
 
-def getAccessibility(request, filterLock, flag, code, includes=[], excludes=[]):
-	rawFilterLock = None
-	if 'flag' in request.GET:
-		rawFilterLock = filterLock
-		filterLock = 'ST_GeomFromText(\''+filterLock+'\',4326)'
+def getAccessibility(request, filterLock, flag, code, includes=[], excludes=[], response=dict_ext(), wkt=None):
+	# rawFilterLock = None
+	# if 'flag' in request.GET:
+	# 	rawFilterLock = filterLock
+	# 	filterLock = 'ST_GeomFromText(\''+filterLock+'\',4326)'
 
 	# targetBase = AfgLndcrva.objects.all()
-	response = dict_ext()
+	# response = dict_ext()
 	# response = getCommonUse(request, flag, code)
 
-	response['baseline'] = getBaseline(request, filterLock, flag, code, includes=['pop_lc','building_lc'])
+	response['baseline'] = response.pathget('cache','getBaseline','baseline') or getBaseline(request, filterLock, flag, code, includes=['pop_lc','building_lc'], proportional=False)
 
 	# if flag not in ['entireAfg','currentProvince']:
 	#     response['Population']=getTotalPop(filterLock, flag, code, targetBase)
@@ -615,7 +956,7 @@ def getAccessibility(request, filterLock, flag, code, includes=[], excludes=[]):
 	#     response['Buildings']= tempData['total_buildings']
 	#     response['settlement']= tempData['settlements']
 
-	accesibilitydata = GetAccesibilityData(rawFilterLock, flag, code, includes, excludes)
+	accesibilitydata = GetAccesibilityData(filterLock, flag, code, includes=[], excludes=[], wkt=wkt)
 
 	# print rawAccesibility
 
@@ -833,7 +1174,8 @@ def getAccessibility(request, filterLock, flag, code, includes=[], excludes=[]):
 	# datatnear_dist.append([_('> 8 h'),response['g8_h__near_dist'] if 'g8_h__near_dist' in response else 0])
 	# response['near_dist_chart'] = gchart.PieChart(SimpleDataSource(data=datatnear_dist), html_id="pie_chart10", options={'title': "", 'width': 290,'height': 290, 'pieSliceTextStyle': {'color': 'black'}, 'pieSliceText': 'percentage','legend': {'position':'top', 'maxLines':4}, 'slices':{0:{'color':'#e3f8ff'},1:{'color':'#defdf0'},2:{'color':'#caf6e4'},3:{'color':'#fcfdde'},4:{'color':'#fef7dc'},5:{'color':'#fce6be'},6:{'color':'#ffd6c5'},7:{'color':'#fdbbac'},8:{'color':'#ffa19a'}} })
 
-	response['lc_child'] = getListAccesibility(filterLock, flag, code)
+	if include_section('lc_child', includes, excludes):
+		response['lc_child'] = getListAccesibility(filterLock, flag, code)
 	# data = getListAccesibility(filterLock, flag, code)
 	# response['lc_child']=data
 
@@ -944,30 +1286,31 @@ def getListAccesibility(filterLock, flag, code):
 		response.append(data)
 	return response
 
-def dashboard_accessibility(request, filterLock, flag, code, includes=[], excludes=[]):
+def dashboard_accessibility(request, filterLock, flag, code, includes=[], excludes=[], response=dict_ext(), wkt=None):
 
-	response = dict_ext()
+	# response = dict_ext()
 
 	if include_section('getCommonUse', includes, excludes):
 		response.update(getCommonUse(request, flag, code))
 
-	response['source'] = accessibility = getAccessibility(request, filterLock, flag, code)
+	response['source'] = accessibility = response.pathget('cache','getAccessibility') or getAccessibility(request, filterLock, flag, code, response=dict_ext(response), wkt=wkt)
 	baseline = accessibility['baseline']
 	panels = response.path('panels')
 	charts = panels.path('charts')
 	tables = panels.path('tables')
 
-	titles = {'pop':_('GSM Coverage Population'), 'area':_('GSM Coverage Area'), 'building':_('GSM Coverage Building')}
-	keys = {'pop':'pop', 'area':'area', 'building':'buildings'}
-	for k,v in keys.items():
-		with charts.path('gsmcoverage_'+k) as chart:
-			chart['key'] = 'gsmcoverage_'+k
-			chart['title'] = titles[k]
-			chart['total'] = baseline[k+'_total']
-			chart['gsmcoverage'] = accessibility[v+'_on_gsm_coverage']
-			chart['child'] = [
-				[_('With GSM Coverage'), accessibility[v+'_on_gsm_coverage']], 
-				[_('Without GSM Coverage'), baseline[k+'_total']-accessibility[v+'_on_gsm_coverage']],
+	if include_section('charts', includes, excludes):
+		titles = {'pop':_('GSM Coverage Population'), 'area':_('GSM Coverage Area'), 'building':_('GSM Coverage Building')}
+		keys = {'pop':'pop', 'area':'area', 'building':'buildings'}
+		for k,v in keys.items():
+			with charts.path('gsmcoverage_'+k) as chart:
+				chart['key'] = 'gsmcoverage_'+k
+				chart['title'] = titles[k]
+				chart['total'] = baseline[k+'_total']
+				chart['gsmcoverage'] = accessibility[v+'_on_gsm_coverage']
+				chart['child'] = [
+					[_('With GSM Coverage'), accessibility[v+'_on_gsm_coverage']], 
+					[_('Without GSM Coverage'), baseline[k+'_total']-accessibility[v+'_on_gsm_coverage']],
 			]
 
 	titles = {
@@ -987,36 +1330,38 @@ def dashboard_accessibility(request, filterLock, flag, code, includes=[], exclud
 			chart['labels'] = [TIME_DISTANCE_TITLES[i] for i in TIME_DISTANCE_TYPES]
 			chart['values'] = [accessibility[k][i] for i in TIME_DISTANCE_TYPES]
 		
-	for k,v in titles.items():
-		with tables.path(k) as table:
-			table['key'] = k
-			table['title'] = v
-			table['parentdata'] = [response['parent_label']]+[accessibility[k][i] for i in TIME_DISTANCE_TYPES]
-			table['child'] = [{
-				'code':i['code'],
-				'value':[i['na_en']]+[i.get('%s_h__%s'%(j,k)) or 0 for j in TIME_DISTANCE_TYPES],
-			} for i in accessibility['lc_child']]
+	if include_section('tables_travel_time', includes, excludes):
+		for k,v in titles.items():
+			with tables.path(k) as table:
+				table['key'] = k
+				table['title'] = v
+				table['parentdata'] = [response['parent_label']]+[accessibility[k][i] for i in TIME_DISTANCE_TYPES]
+				table['child'] = [{
+					'code':i['code'],
+					'value':[i['na_en']]+[i.get('%s_h__%s'%(j,k)) or 0 for j in TIME_DISTANCE_TYPES],
+				} for i in accessibility['lc_child']]
 
-	k = 'mobile_phone_coverage_population'
-	tables[k] = {
-		'key':k,
-		'title':_('Mobile Phone Coverage Population'),
-		'parentdata':[
-			response['parent_label'],
-			accessibility['pop_on_gsm_coverage'],
-			accessibility['buildings_on_gsm_coverage'],
-			accessibility['area_on_gsm_coverage'],
-		],
-		'child':[{
-			'code':i.get('prov_code') or i.get('dist_code') or 0,
-			'value':[
-				i['na_en'],
-				i['pop'],
-				i['buildings'],
-				i['area'],
+	if include_section('tables_mobile_phone_coverage_population', includes, excludes):
+		k = 'mobile_phone_coverage_population'
+		tables[k] = {
+			'key':k,
+			'title':_('Mobile Phone Coverage Population'),
+			'parentdata':[
+				response['parent_label'],
+				accessibility['pop_on_gsm_coverage'],
+				accessibility['buildings_on_gsm_coverage'],
+				accessibility['area_on_gsm_coverage'],
 			],
-		} for i in accessibility['gsm_child']]
-	}
+			'child':[{
+				'code':i.get('prov_code') or i.get('dist_code') or 0,
+				'value':[
+					i['na_en'],
+					i['pop'],
+					i['buildings'],
+					i['area'],
+				],
+			} for i in accessibility['gsm_child']]
+		}
 
 	if include_section('GeoJson', includes, excludes):
 		response['GeoJson'] = geojsonadd_accessibility(response)
@@ -1075,10 +1420,10 @@ class AccesibilityStatisticResource(ModelResource):
 		boundaryFilter = json.loads(request.body)
 
 		wkts = ['ST_GeomFromText(\'%s\',4326)'%(i) for i in boundaryFilter['spatialfilter']]
-		bring = wkts[-1] if len(wkts) else None
+		wkt = list_ext(boundaryFilter.get('spatialfilter',[])).get(-1)
 		filterLock = 'ST_Union(ARRAY[%s])'%(','.join(wkts))
 
-		response = getAccesibilityStatistic(request, filterLock, boundaryFilter.get('flag'), boundaryFilter.get('code'), date=boundaryFilter.get('date'))
+		response = getAccesibilityStatistic(request, filterLock, boundaryFilter.get('flag'), boundaryFilter.get('code'), date=boundaryFilter.get('date'), wkt=wkt)
 
 		return response
 
@@ -1087,13 +1432,13 @@ class AccesibilityStatisticResource(ModelResource):
 		response = self.getRisk(request)
 		return self.create_response(request, response)  
 
-def getAccesibilityStatistic(request,filterLock, flag, code, date):
+def getAccesibilityStatistic(request,filterLock, flag, code, date, wkt=None):
 
-	panels = dashboard_accessibility(request, filterLock, flag, code, date, excludes=['GeoJson'])['panels']
+	panels = dashboard_accessibility(request, filterLock, flag, code, date, excludes=['GeoJson'], wkt=wkt)['panels']
 
 	panels_list = dict_ext()
 	# panels_list['charts'] = [v for k,v in panels['charts'].items() if k in ['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist']]
-	panels_list['charts'] = panels.path('charts').valueslistbykey(['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','ear_hlt3','near_hltall','itsx_prov','near_prov','near_dist'],addkeyasattr=True)
+	panels_list['charts'] = panels.path('charts').valueslistbykey(['gsmcoverage_building','gsmcoverage_area','gsmcoverage_pop','near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist'],addkeyasattr=True)
 	panels_list['tables'] = [{
 		'key':k,
 		'title':panels['tables'][k]['title'],
@@ -1101,3 +1446,15 @@ def getAccesibilityStatistic(request,filterLock, flag, code, date):
 	} for k in ['mobile_phone_coverage_population','near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist'] if k in panels['tables']]
 
 	return {'panels_list':panels_list}
+
+def getQuickOverview(request, filterLock, flag, code, response=dict_ext()):
+	response.path('cache')['getAccessibility'] = response.pathget('cache','getAccessibility') or getAccessibility(request, filterLock, flag, code, includes=[None], response=dict_ext(response))
+	dashboard_accessibility_response = dashboard_accessibility(request, filterLock, flag, code, includes=['charts'], response=response)
+	return {
+		'templates':{
+			'panels':'dash_qoview_accessibility.html',
+		},
+		'data':{
+			'panels':dict_ext(dashboard_accessibility_response).pathget('panels'),
+		},
+	}
