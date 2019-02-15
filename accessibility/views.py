@@ -114,6 +114,7 @@ from urlparse import urlparse
 from django.conf.urls import url
 from tastypie.utils import trailing_slash
 from tastypie.authentication import BasicAuthentication, SessionAuthentication
+from .enumerations import TRAVELTIMETO_TYPES
 
 def get_dashboard_meta(*args,**kwargs):
 	# if page_name == 'accessibility':
@@ -1375,7 +1376,6 @@ def geojsonadd_accessibility(response):
 	boundary = response['source']['GeoJson']
 	accessibility['lc_child_dict'] = {v['code']:v for v in accessibility['lc_child']}
 	keys = ['Area','Population','area_on_gsm_coverage','buildings_on_gsm_coverage','na_en','pop_on_gsm_coverage',]
-	TRAVELTIMETO_TYPES = ['near_airp','near_hlt1','near_hlt2','near_hlt3','near_hltall','itsx_prov','near_prov','near_dist']
 
 	for i,l in enumerate(boundary.get('features',[])):
 		boundary['features'][i]['properties'] = prop = dict_ext(boundary['features'][i]['properties'])
